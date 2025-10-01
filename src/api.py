@@ -84,6 +84,33 @@ def criar_entrega():
     return jsonify({'success': True, 'id': entrega.id})
 
 # ============================================================================
+# HEADERS DE SEGURANÇA
+# ============================================================================
+
+@app.after_request
+def add_security_headers(response):
+    # Headers básicos de segurança
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    # HTTPS e HSTS (apenas em produção)
+    is_production = os.environ.get('FLASK_ENV') == 'production'
+    if is_production:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "font-src 'self'; "
+            "connect-src 'self'"
+        )
+    
+    return response
+
+# ============================================================================
 # INICIALIZAÇÃO
 # ============================================================================
 
