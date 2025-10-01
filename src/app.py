@@ -1,22 +1,46 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import logging
 import os
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente
+load_dotenv()
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 import secrets
 import sqlite3
-import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
-app.config['SECRET_KEY'] = secrets.token_hex(16)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/ubuntu/site_integrado_expresso/src/instance/expresso_itaporanga.db'
+
+# Configurar CORS
+CORS(app, origins=[
+    'http://localhost:3000',
+    'https://*.railway.app',
+    os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+])
+
+# Configurar aplicação
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(16)
+
+# Configurar banco de dados
+if os.environ.get('DATABASE_URL'):
+    # Railway PostgreSQL
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Desenvolvimento local
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///expresso_itaporanga.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
