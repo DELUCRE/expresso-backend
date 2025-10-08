@@ -612,12 +612,260 @@ def api_processar_contato():
         }), 500
 
 # API: Documentação da API
+# ============================================================================
+# ROTAS DA API PARA GESTÃO DE ROTAS E CONFIGURAÇÕES
+# ============================================================================
+
+# Modelo para Rotas
+class Rota(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    origem = db.Column(db.String(100), nullable=False)
+    destino = db.Column(db.String(100), nullable=False)
+    distancia = db.Column(db.Float, nullable=False)
+    tempo_estimado = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(20), default='ativa')
+    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Modelo para Configurações
+class Configuracao(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    chave = db.Column(db.String(50), nullable=False, unique=True)
+    valor = db.Column(db.Text, nullable=False)
+    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Modelo para Empresa
+class Empresa(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    cnpj = db.Column(db.String(20), nullable=False)
+    telefone = db.Column(db.String(20), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    endereco = db.Column(db.Text, nullable=False)
+    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow)
+
+# API - Rotas
+@app.route('/api/rotas', methods=['GET'])
+def api_listar_rotas():
+    """Listar todas as rotas"""
+    try:
+        rotas = Rota.query.all()
+        return jsonify([{
+            'id': r.id,
+            'nome': r.nome,
+            'origem': r.origem,
+            'destino': r.destino,
+            'distancia': r.distancia,
+            'tempo_estimado': r.tempo_estimado,
+            'status': r.status
+        } for r in rotas])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rotas', methods=['POST'])
+def api_criar_rota():
+    """Criar nova rota"""
+    try:
+        data = request.get_json()
+        
+        nova_rota = Rota(
+            nome=data['nome'],
+            origem=data['origem'],
+            destino=data['destino'],
+            distancia=float(data['distancia']),
+            tempo_estimado=data['tempo_estimado'],
+            status=data.get('status', 'ativa')
+        )
+        
+        db.session.add(nova_rota)
+        db.session.commit()
+        
+        return jsonify({'message': 'Rota criada com sucesso', 'id': nova_rota.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rotas/<int:rota_id>', methods=['PUT'])
+def api_atualizar_rota(rota_id):
+    """Atualizar rota existente"""
+    try:
+        rota = Rota.query.get_or_404(rota_id)
+        data = request.get_json()
+        
+        rota.nome = data.get('nome', rota.nome)
+        rota.origem = data.get('origem', rota.origem)
+        rota.destino = data.get('destino', rota.destino)
+        rota.distancia = float(data.get('distancia', rota.distancia))
+        rota.tempo_estimado = data.get('tempo_estimado', rota.tempo_estimado)
+        rota.status = data.get('status', rota.status)
+        
+        db.session.commit()
+        return jsonify({'message': 'Rota atualizada com sucesso'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rotas/<int:rota_id>', methods=['DELETE'])
+def api_excluir_rota(rota_id):
+    """Excluir rota"""
+    try:
+        rota = Rota.query.get_or_404(rota_id)
+        db.session.delete(rota)
+        db.session.commit()
+        return jsonify({'message': 'Rota excluída com sucesso'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# API - Configurações
+@app.route('/api/configuracoes', methods=['GET'])
+def api_obter_configuracoes():
+    """Obter todas as configurações"""
+    try:
+        configs = {}
+        configuracoes = Configuracao.query.all()
+        
+        for config in configuracoes:
+            configs[config.chave] = config.valor
+        
+        # Valores padrão se não existirem no banco
+        defaults = {
+            'notificacoes': 'true',
+            'rastreamento': 'true',
+            'modo_escuro': 'false',
+            'logout_automatico': 'true'
+        }
+        
+        for chave, valor in defaults.items():
+            if chave not in configs:
+                configs[chave] = valor
+        
+        return jsonify(configs)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/configuracoes', methods=['POST'])
+def api_salvar_configuracoes():
+    """Salvar configurações"""
+    try:
+        data = request.get_json()
+        
+        for chave, valor in data.items():
+            config = Configuracao.query.filter_by(chave=chave).first()
+            if config:
+                config.valor = str(valor)
+                config.data_atualizacao = datetime.utcnow()
+            else:
+                config = Configuracao(chave=chave, valor=str(valor))
+                db.session.add(config)
+        
+        db.session.commit()
+        return jsonify({'message': 'Configurações salvas com sucesso'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# API - Empresa
+@app.route('/api/empresa', methods=['GET'])
+def api_obter_empresa():
+    """Obter dados da empresa"""
+    try:
+        empresa = Empresa.query.first()
+        
+        if empresa:
+            return jsonify({
+                'nome': empresa.nome,
+                'cnpj': empresa.cnpj,
+                'telefone': empresa.telefone,
+                'email': empresa.email,
+                'endereco': empresa.endereco
+            })
+        else:
+            # Dados padrão
+            return jsonify({
+                'nome': 'Expresso Itaporanga',
+                'cnpj': '12.345.678/0001-90',
+                'telefone': '(83) 99832-3948',
+                'email': 'comercial@expressoitaporanga.com.br',
+                'endereco': 'Rod PB-372, S/N - Sítio Malhada Grande, Itaporanga/PB'
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/empresa', methods=['POST'])
+def api_atualizar_empresa():
+    """Atualizar dados da empresa"""
+    try:
+        data = request.get_json()
+        empresa = Empresa.query.first()
+        
+        if empresa:
+            empresa.nome = data.get('nome', empresa.nome)
+            empresa.cnpj = data.get('cnpj', empresa.cnpj)
+            empresa.telefone = data.get('telefone', empresa.telefone)
+            empresa.email = data.get('email', empresa.email)
+            empresa.endereco = data.get('endereco', empresa.endereco)
+            empresa.data_atualizacao = datetime.utcnow()
+        else:
+            empresa = Empresa(
+                nome=data['nome'],
+                cnpj=data['cnpj'],
+                telefone=data['telefone'],
+                email=data['email'],
+                endereco=data['endereco']
+            )
+            db.session.add(empresa)
+        
+        db.session.commit()
+        return jsonify({'message': 'Dados da empresa atualizados com sucesso'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# API - Inicializar dados
+@app.route('/api/init-data', methods=['POST'])
+def api_inicializar_dados():
+    """Inicializar dados padrão"""
+    try:
+        # Criar tabelas
+        db.create_all()
+        
+        # Verificar se já existem rotas
+        if Rota.query.count() == 0:
+            rotas_padrao = [
+                Rota(nome='SP-PB Principal', origem='São Paulo', destino='Itaporanga', distancia=2100, tempo_estimado='36h', status='ativa'),
+                Rota(nome='SP-PB Expressa', origem='Guarulhos', destino='Campina Grande', distancia=2050, tempo_estimado='34h', status='ativa'),
+                Rota(nome='Rota Sertão', origem='São Paulo', destino='Sousa', distancia=2200, tempo_estimado='38h', status='ativa'),
+                Rota(nome='Rota Vale do Piancó', origem='São Paulo', destino='Piancó', distancia=2150, tempo_estimado='37h', status='ativa'),
+                Rota(nome='Rota São Francisco', origem='Guarulhos', destino='São Francisco', distancia=2180, tempo_estimado='38h', status='manutenção')
+            ]
+            
+            for rota in rotas_padrao:
+                db.session.add(rota)
+        
+        # Verificar se já existe empresa
+        if Empresa.query.count() == 0:
+            empresa_padrao = Empresa(
+                nome='Expresso Itaporanga',
+                cnpj='12.345.678/0001-90',
+                telefone='(83) 99832-3948',
+                email='comercial@expressoitaporanga.com.br',
+                endereco='Rod PB-372, S/N - Sítio Malhada Grande, Itaporanga/PB'
+            )
+            db.session.add(empresa_padrao)
+        
+        db.session.commit()
+        return jsonify({'message': 'Dados inicializados com sucesso'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/docs', methods=['GET'])
-def api_documentacao():
+def api_docs():
+    """Documentação da API"""
     docs = {
-        'title': 'API Expresso Itaporanga',
-        'version': '1.0.0',
-        'description': 'API REST para gestão de entregas e rastreamento logístico',
+        'titulo': 'API Expresso Itaporanga',
+        'versao': '1.0',
         'endpoints': {
             'GET /api/entregas': 'Listar todas as entregas',
             'GET /api/entregas/<codigo>': 'Buscar entrega por código de rastreamento',
@@ -625,6 +873,15 @@ def api_documentacao():
             'PUT /api/entregas/<codigo>/status': 'Atualizar status da entrega',
             'GET /api/estatisticas': 'Obter estatísticas gerais',
             'POST /api/contato': 'Processar formulário de contato',
+            'GET /api/rotas': 'Listar todas as rotas',
+            'POST /api/rotas': 'Criar nova rota',
+            'PUT /api/rotas/<id>': 'Atualizar rota',
+            'DELETE /api/rotas/<id>': 'Excluir rota',
+            'GET /api/configuracoes': 'Obter configurações',
+            'POST /api/configuracoes': 'Salvar configurações',
+            'GET /api/empresa': 'Obter dados da empresa',
+            'POST /api/empresa': 'Atualizar dados da empresa',
+            'POST /api/init-data': 'Inicializar dados padrão',
             'GET /api/docs': 'Esta documentação'
         },
         'status_validos': ['pendente', 'coletado', 'em_transito', 'entregue', 'cancelado'],
