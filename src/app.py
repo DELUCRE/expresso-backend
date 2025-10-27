@@ -854,6 +854,29 @@ def api_inicializar_dados():
             )
             db.session.add(empresa_padrao)
         
+        # Verificar se já existem entregas
+        if Entrega.query.count() == 0:
+            entregas_exemplo = [
+                Entrega(codigo_rastreamento='EI12345678', remetente_nome='João Silva', remetente_endereco='Rua das Flores, 123', remetente_cidade='São Paulo/SP', destinatario_nome='Maria Santos', destinatario_endereco='Av. Principal, 456', destinatario_cidade='Itaporanga/PB', tipo_produto='Eletrônicos', peso=2.5, valor_declarado=250.00, status='em_transito'),
+                Entrega(codigo_rastreamento='EI87654321', remetente_nome='Pedro Oliveira', remetente_endereco='Rua do Comércio, 789', remetente_cidade='Guarulhos/SP', destinatario_nome='Ana Costa', destinatario_endereco='Rua Nova, 321', destinatario_cidade='Campina Grande/PB', tipo_produto='Roupas', peso=1.8, valor_declarado=180.50, status='entregue'),
+                Entrega(codigo_rastreamento='EI11223344', remetente_nome='Carlos Mendes', remetente_endereco='Av. Central, 654', remetente_cidade='São Paulo/SP', destinatario_nome='Lucia Ferreira', destinatario_endereco='Rua das Palmeiras, 987', destinatario_cidade='Sousa/PB', tipo_produto='Livros', peso=3.2, valor_declarado=320.75, status='coletado'),
+                Entrega(codigo_rastreamento='EI55667788', remetente_nome='Roberto Lima', remetente_endereco='Rua da Paz, 147', remetente_cidade='São Paulo/SP', destinatario_nome='Fernanda Alves', destinatario_endereco='Av. Brasil, 258', destinatario_cidade='Itaporanga/PB', tipo_produto='Cosméticos', peso=1.2, valor_declarado=150.00, status='pendente'),
+                Entrega(codigo_rastreamento='EI99887766', remetente_nome='Marcos Santos', remetente_endereco='Rua Verde, 369', remetente_cidade='Guarulhos/SP', destinatario_nome='Patricia Rocha', destinatario_endereco='Rua Azul, 741', destinatario_cidade='Cajazeiras/PB', tipo_produto='Medicamentos', peso=0.8, valor_declarado=89.90, status='em_transito'),
+                Entrega(codigo_rastreamento='EI44556677', remetente_nome='Antonio Silva', remetente_endereco='Av. Paulista, 852', remetente_cidade='São Paulo/SP', destinatario_nome='Claudia Martins', destinatario_endereco='Rua Principal, 159', destinatario_cidade='Patos/PB', tipo_produto='Calçados', peso=2.1, valor_declarado=199.99, status='entregue'),
+                Entrega(codigo_rastreamento='EI33445566', remetente_nome='Luis Pereira', remetente_endereco='Rua dos Trabalhadores, 753', remetente_cidade='São Paulo/SP', destinatario_nome='Mariana Costa', destinatario_endereco='Av. Liberdade, 486', destinatario_cidade='Itaporanga/PB', tipo_produto='Brinquedos', peso=1.5, valor_declarado=125.50, status='coletado'),
+                Entrega(codigo_rastreamento='EI22334455', remetente_nome='Fernando Rocha', remetente_endereco='Rua da Esperança, 951', remetente_cidade='Guarulhos/SP', destinatario_nome='Juliana Lima', destinatario_endereco='Rua do Sol, 357', destinatario_cidade='Campina Grande/PB', tipo_produto='Perfumes', peso=0.6, valor_declarado=75.00, status='em_transito'),
+                Entrega(codigo_rastreamento='EI66778899', remetente_nome='Ricardo Alves', remetente_endereco='Av. das Nações, 654', remetente_cidade='São Paulo/SP', destinatario_nome='Carla Souza', destinatario_endereco='Rua Feliz, 123', destinatario_cidade='Sousa/PB', tipo_produto='Artesanato', peso=2.8, valor_declarado=280.00, status='pendente'),
+                Entrega(codigo_rastreamento='EI77889900', remetente_nome='Eduardo Santos', remetente_endereco='Rua Nova Era, 456', remetente_cidade='São Paulo/SP', destinatario_nome='Beatriz Oliveira', destinatario_endereco='Av. Progresso, 789', destinatario_cidade='Itaporanga/PB', tipo_produto='Instrumentos', peso=4.2, valor_declarado=420.00, status='entregue'),
+                Entrega(codigo_rastreamento='EI88990011', remetente_nome='Gabriel Costa', remetente_endereco='Rua Moderna, 321', remetente_cidade='Guarulhos/SP', destinatario_nome='Amanda Silva', destinatario_endereco='Rua Tranquila, 654', destinatario_cidade='Cajazeiras/PB', tipo_produto='Decoração', peso=3.5, valor_declarado=350.75, status='coletado'),
+                Entrega(codigo_rastreamento='EI00112233', remetente_nome='Thiago Ferreira', remetente_endereco='Av. Futuro, 987', remetente_cidade='São Paulo/SP', destinatario_nome='Camila Martins', destinatario_endereco='Rua Harmonia, 147', destinatario_cidade='Patos/PB', tipo_produto='Esportivos', peso=1.9, valor_declarado=190.00, status='em_transito'),
+                Entrega(codigo_rastreamento='EI11223355', remetente_nome='Bruno Lima', remetente_endereco='Rua Vitória, 258', remetente_cidade='São Paulo/SP', destinatario_nome='Daniela Costa', destinatario_endereco='Av. Esperança, 369', destinatario_cidade='Itaporanga/PB', tipo_produto='Informática', peso=2.7, valor_declarado=270.50, status='pendente'),
+                Entrega(codigo_rastreamento='EI44556688', remetente_nome='Diego Alves', remetente_endereco='Rua Progresso, 741', remetente_cidade='Guarulhos/SP', destinatario_nome='Larissa Santos', destinatario_endereco='Rua Alegria, 852', destinatario_cidade='Campina Grande/PB', tipo_produto='Casa e Jardim', peso=3.8, valor_declarado=380.25, status='entregue'),
+                Entrega(codigo_rastreamento='EI77889911', remetente_nome='Renato Silva', remetente_endereco='Av. Liberdade, 159', remetente_cidade='São Paulo/SP', destinatario_nome='Vanessa Rocha', destinatario_endereco='Rua Serenidade, 486', destinatario_cidade='Sousa/PB', tipo_produto='Automotivo', peso=5.1, valor_declarado=510.00, status='coletado')
+            ]
+            
+            for entrega in entregas_exemplo:
+                db.session.add(entrega)
+        
         db.session.commit()
         return jsonify({'message': 'Dados inicializados com sucesso'})
     except Exception as e:
