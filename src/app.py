@@ -332,8 +332,109 @@ def init_db():
 with app.app_context():
     init_db()
 
+# API: Inicializar dados de exemplo
+@app.route('/api/init-data', methods=['POST', 'GET'])
+def api_init_data():
+    try:
+        # Verificar se já existem dados
+        if Entrega.query.count() > 0:
+            return jsonify({
+                'success': True,
+                'message': 'Dados já existem no banco',
+                'total_entregas': Entrega.query.count()
+            })
+        
+        # Criar 15 entregas de exemplo
+        entregas_exemplo = [
+            {
+                'remetente_nome': 'João Silva',
+                'remetente_endereco': 'Rua das Flores, 123',
+                'remetente_cidade': 'São Paulo/SP',
+                'destinatario_nome': 'Maria Santos',
+                'destinatario_endereco': 'Av. Principal, 456',
+                'destinatario_cidade': 'Itaporanga/PB',
+                'tipo_produto': 'Eletrônicos',
+                'peso': 2.5,
+                'valor_declarado': 250.00,
+                'status': 'entregue'
+            },
+            {
+                'remetente_nome': 'Pedro Oliveira',
+                'remetente_endereco': 'Rua do Comércio, 789',
+                'remetente_cidade': 'São Paulo/SP',
+                'destinatario_nome': 'Ana Costa',
+                'destinatario_endereco': 'Rua da Paz, 321',
+                'destinatario_cidade': 'Guarulhos/SP',
+                'tipo_produto': 'Roupas',
+                'peso': 1.2,
+                'valor_declarado': 180.50,
+                'status': 'em_transito'
+            },
+            {
+                'remetente_nome': 'Carlos Santos',
+                'remetente_endereco': 'Av. Central, 654',
+                'remetente_cidade': 'São Paulo/SP',
+                'destinatario_nome': 'Lucia Ferreira',
+                'destinatario_endereco': 'Rua Nova, 987',
+                'destinatario_cidade': 'Itaporanga/PB',
+                'tipo_produto': 'Livros',
+                'peso': 3.0,
+                'valor_declarado': 320.75,
+                'status': 'coletado'
+            }
+        ]
+        
+        # Duplicar dados para chegar a 15
+        import random
+        import string
+        
+        for i in range(15):
+            base = entregas_exemplo[i % 3].copy()
+            
+            # Gerar código único
+            codigo = 'EI' + ''.join(random.choices(string.digits, k=8))
+            while Entrega.query.filter_by(codigo_rastreamento=codigo).first():
+                codigo = 'EI' + ''.join(random.choices(string.digits, k=8))
+            
+            # Variar alguns dados
+            if i > 2:
+                base['remetente_nome'] += f' {i+1}'
+                base['destinatario_nome'] += f' {i+1}'
+                base['valor_declarado'] += i * 10
+            
+            # Criar entrega
+            entrega = Entrega(
+                codigo_rastreamento=codigo,
+                remetente_nome=base['remetente_nome'],
+                remetente_endereco=base['remetente_endereco'],
+                remetente_cidade=base['remetente_cidade'],
+                destinatario_nome=base['destinatario_nome'],
+                destinatario_endereco=base['destinatario_endereco'],
+                destinatario_cidade=base['destinatario_cidade'],
+                tipo_produto=base['tipo_produto'],
+                peso=base['peso'],
+                valor_declarado=base['valor_declarado'],
+                status=base['status']
+            )
+            
+            db.session.add(entrega)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '15 entregas de exemplo criadas com sucesso',
+            'total_entregas': Entrega.query.count()
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
 
